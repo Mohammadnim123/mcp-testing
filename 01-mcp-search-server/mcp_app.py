@@ -1,7 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 from search_tools import web_search as do_web_search, image_search as do_image_search
 
-mcp_server = FastMCP("serp-search-mcp")
+mcp_server = FastMCP("serp-search-mcp", host="0.0.0.0", port=3002)
 
 
 @mcp_server.tool()

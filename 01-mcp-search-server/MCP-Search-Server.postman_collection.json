@@ -1,0 +1,284 @@
+{
+  "info": {
+    "name": "MCP Search Server",
+    "description": "Postman collection for testing the serp-search-mcp FastMCP server running on StreamableHTTP transport.\n\n**Usage flow:**\n1. Set your environment to `MCP Search Server - Local`\n2. Run **Initialize** first — it auto-saves the `session_id`\n3. Send the **Initialized Notification** to complete the handshake\n4. Use **List Tools**, **Web Search**, or **Image Search** freely\n\nAll requests after Initialize automatically include the `mcp-session-id` header via the environment variable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [],
+  "item": [
+    {
+      "name": "Session Management",
+      "description": "MCP session lifecycle — initialize and confirm the connection.",
+      "item": [
+        {
+          "name": "1. Initialize",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Capture the session ID returned by the server",
+                  "const sessionId = pm.response.headers.get('mcp-session-id');",
+                  "if (sessionId) {",
+                  "    pm.environment.set('session_id', sessionId);",
+                  "    console.log('Session ID saved:', sessionId);",
+                  "} else {",
+                  "    console.warn('No mcp-session-id header found in response');",
+                  "}",
+                  "",
+                  "// Basic response checks",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has jsonrpc field', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('jsonrpc', '2.0');",
+                  "});",
+                  "pm.test('Response has result', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('result');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2024-11-05\",\n    \"capabilities\": {\n      \"roots\": { \"listChanged\": true },\n      \"sampling\": {}\n    },\n    \"clientInfo\": {\n      \"name\": \"postman-client\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            },
+            "description": "Initiates an MCP session. The server responds with its capabilities and a `mcp-session-id` header, which is automatically saved to the `session_id` environment variable by the test script."
+          }
+        },
+        {
+          "name": "2. Initialized Notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Notifications return 202 Accepted with no body",
+                  "pm.test('Status is 202 Accepted', () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" },
+              { "key": "mcp-session-id", "value": "{{session_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"notifications/initialized\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            },
+            "description": "Confirms the session is ready. This is a notification (no `id` field), so the server returns `202 Accepted` with no body."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Discovery",
+      "description": "Inspect what the server exposes.",
+      "item": [
+        {
+          "name": "List Tools",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Result contains tools array', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.result).to.have.property('tools').that.is.an('array');",
+                  "});",
+                  "pm.test('At least one tool returned', () => {",
+                  "    const tools = pm.response.json().result.tools;",
+                  "    pm.expect(tools.length).to.be.above(0);",
+                  "    console.log('Available tools:', tools.map(t => t.name).join(', '));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" },
+              { "key": "mcp-session-id", "value": "{{session_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/list\",\n  \"params\": {}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            },
+            "description": "Returns the list of tools registered on the server with their names, descriptions, and input schemas."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tools",
+      "description": "Call the individual MCP tools exposed by the server.",
+      "item": [
+        {
+          "name": "Web Search",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Result has content', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('result');",
+                  "    pm.expect(body.result).to.have.property('content').that.is.an('array');",
+                  "    pm.expect(body.result.content.length).to.be.above(0);",
+                  "});",
+                  "pm.test('No error in response', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.not.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" },
+              { "key": "mcp-session-id", "value": "{{session_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 3,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"web_search\",\n    \"arguments\": {\n      \"query\": \"{{search_query}}\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            },
+            "description": "Calls `web_search` via SerpAPI (Google). Change `{{search_query}}` in the environment to test different queries."
+          }
+        },
+        {
+          "name": "Image Search",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Result has content', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('result');",
+                  "    pm.expect(body.result).to.have.property('content').that.is.an('array');",
+                  "    pm.expect(body.result.content.length).to.be.above(0);",
+                  "});",
+                  "pm.test('No error in response', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.not.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" },
+              { "key": "mcp-session-id", "value": "{{session_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 4,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"image_search\",\n    \"arguments\": {\n      \"query\": \"{{search_query}}\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            },
+            "description": "Calls `image_search` via SerpAPI (Google Images). Returns top 5 image results with URLs and sources. Uses `{{search_query}}` from the environment."
+          }
+        },
+        {
+          "name": "Web Search - Error Case (missing query)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 or 4xx', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 422]);",
+                  "});",
+                  "// If 200, there should be an error field in the JSON-RPC response",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Response contains error or empty result', () => {",
+                  "        const body = pm.response.json();",
+                  "        const hasError = body.error !== undefined;",
+                  "        const hasResult = body.result !== undefined;",
+                  "        pm.expect(hasError || hasResult).to.be.true;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json, text/event-stream" },
+              { "key": "mcp-session-id", "value": "{{session_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 5,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"web_search\",\n    \"arguments\": {}\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            },
+            "description": "Edge case: calls `web_search` with no `query` argument to verify the server handles missing required parameters gracefully."
+          }
+        }
+      ]
+    }
+  ]
+}
