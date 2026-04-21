@@ -1,8 +1,7 @@
-import os
-
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
 checkpointer = MemorySaver()
 
@@ -10,9 +9,11 @@ SYSTEM_MESSAGE = """You are a helpful personal assistant. Always use your tools 
 For any questions about current events, facts, or information, use the search tools.
 IMPORTANT: When tool output contains markdown image syntax like ![alt](url), preserve it exactly in your response."""
 
+MCP_URL = "http://localhost:3002/mcp"
 
-async def run_agent(message: str, session_id: str = "default", mode: str = "rag") -> dict:
-    """Run the LangChain agent with the specified mode."""
+
+async def run_agent(message: str, session_id: str = "default", mode: str = "mcp") -> dict:
+    """Run the LangChain agent in either MCP or RAG mode."""
 
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
     thread_id = f"{session_id}-{mode}"
@@ -22,37 +23,11 @@ async def run_agent(message: str, session_id: str = "default", mode: str = "rag"
         from .tools import search_knowledge_base
         tools = [search_knowledge_base]
 
-    elif mode == "api":
-        from .tools_search_api import serp_api_search_tool, serp_api_image_search_tool
-        tools = [serp_api_search_tool, serp_api_image_search_tool]
-
     elif mode == "mcp":
-        from langchain_mcp_adapters.client import MultiServerMCPClient
         client = MultiServerMCPClient({
             "search": {
-                "url": "http://localhost:3002/mcp",
+                "url": MCP_URL,
                 "transport": "streamable_http",
-            }
-        })
-        await client.__aenter__()
-        tools = client.get_tools()
-
-    elif mode == "mcp-stdio":
-        from langchain_mcp_adapters.client import MultiServerMCPClient
-        client = MultiServerMCPClient({
-            "search": {
-                "command": "python",
-                "args": [
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        "..", "..",
-                        "01-mcp-search-server", "stdio_server.py",
-                    )
-                ],
-                "transport": "stdio",
-                "env": {
-                    "SERPAPI_API_KEY": os.environ.get("SERPAPI_API_KEY", ""),
-                },
             }
         })
         await client.__aenter__()
@@ -61,14 +36,14 @@ async def run_agent(message: str, session_id: str = "default", mode: str = "rag"
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
-    agent = create_react_agent(
-        llm,
-        tools,
-        checkpointer=checkpointer,
-        prompt=SYSTEM_MESSAGE,
-    )
-
     try:
+        agent = create_react_agent(
+            llm,
+            tools,
+            checkpointer=checkpointer,
+            prompt=SYSTEM_MESSAGE,
+        )
+
         result = await agent.ainvoke(
             {"messages": [{"role": "user", "content": message}]},
             config={"configurable": {"thread_id": thread_id}},

@@ -22,7 +22,6 @@ body {
     padding: 0 16px;
 }
 
-/* Header */
 .header {
     position: sticky;
     top: 0;
@@ -90,10 +89,8 @@ body {
     display: inline-block;
 }
 
-.mode-dot.rag { background: #a855f7; }
-.mode-dot.api { background: #f59e0b; }
 .mode-dot.mcp { background: #10b981; }
-.mode-dot.mcp-stdio { background: #f59e0b; }
+.mode-dot.rag { background: #a855f7; }
 
 .mode-description {
     text-align: center;
@@ -165,7 +162,20 @@ body {
 .upload-status.success { color: #10b981; }
 .upload-status.error { color: #ef4444; }
 
-/* Chat Area */
+.mode-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    margin-bottom: 4px;
+}
+
+.mode-badge.mcp { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.mode-badge.rag { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+
 .chat-area {
     flex: 1;
     overflow-y: auto;
@@ -184,7 +194,6 @@ body {
     padding: 60px 20px;
 }
 
-/* Messages */
 .message {
     display: flex;
     flex-direction: column;
@@ -258,23 +267,6 @@ body {
     margin: 6px 0;
 }
 
-.mode-badge {
-    display: inline-block;
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 2px 8px;
-    border-radius: 9999px;
-    margin-bottom: 4px;
-}
-
-.mode-badge.rag { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
-.mode-badge.api { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.mode-badge.mcp { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-.mode-badge.mcp-stdio { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-
-/* Loading */
 .loading-indicator {
     text-align: center;
     padding: 8px;
@@ -295,7 +287,6 @@ body {
     100% { content: ''; }
 }
 
-/* Input Area */
 .input-area {
     position: sticky;
     bottom: 0;
@@ -357,7 +348,6 @@ body {
     cursor: not-allowed;
 }
 
-/* Scrollbar */
 .chat-area::-webkit-scrollbar {
     width: 6px;
 }
@@ -371,7 +361,6 @@ body {
     border-radius: 3px;
 }
 
-/* Responsive */
 @media (max-width: 640px) {
     .container {
         padding: 0 10px;
@@ -379,14 +368,5 @@ body {
 
     .message {
         max-width: 90%;
-    }
-
-    .mode-selector {
-        gap: 6px;
-    }
-
-    .mode-btn {
-        padding: 6px 12px;
-        font-size: 0.78rem;
     }
 }

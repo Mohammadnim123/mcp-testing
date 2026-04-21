@@ -30,7 +30,7 @@ async def api_chat(request):
         return JsonResponse({"error": "message is required"}, status=400)
 
     session_id = body.get("sessionId", "default")
-    mode = body.get("mode", "rag")
+    mode = body.get("mode", "mcp")
 
     try:
         result = await run_agent(message, session_id, mode)

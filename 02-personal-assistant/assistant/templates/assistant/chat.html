@@ -12,24 +12,18 @@
     <div class="container">
         <header class="header">
             <h1>Personal Assistant</h1>
-            <p class="subtitle">AI-powered assistant with multiple tool modes</p>
+            <p class="subtitle">MCP (HTTP) + RAG assistant</p>
         </header>
 
         <div class="mode-selector">
-            <button class="mode-btn active" data-mode="rag" onclick="setMode('rag')">
-                <span class="mode-dot rag"></span> RAG
-            </button>
-            <button class="mode-btn" data-mode="api" onclick="setMode('api')">
-                <span class="mode-dot api"></span> API
-            </button>
-            <button class="mode-btn" data-mode="mcp" onclick="setMode('mcp')">
+            <button class="mode-btn active" data-mode="mcp" onclick="setMode('mcp')">
                 <span class="mode-dot mcp"></span> MCP
             </button>
-            <button class="mode-btn" data-mode="mcp-stdio" onclick="setMode('mcp-stdio')">
-                <span class="mode-dot mcp-stdio"></span> MCP-stdio
+            <button class="mode-btn" data-mode="rag" onclick="setMode('rag')">
+                <span class="mode-dot rag"></span> RAG
             </button>
         </div>
-        <p class="mode-description" id="modeDescription">RAG mode: Search your uploaded PDF knowledge base using Pinecone vector store.</p>
+        <p class="mode-description" id="modeDescription">MCP mode: Use tools from the remote MCP server over HTTP (streamable).</p>
 
         <div class="upload-panel">
             <div class="upload-row">

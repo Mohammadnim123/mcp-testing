@@ -1,17 +1,13 @@
-// State
-let mode = 'rag';
+let mode = 'mcp';
 let loading = false;
 let uploading = false;
 const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 
 const MODE_DESCRIPTIONS = {
+    'mcp': 'MCP mode: Use tools from the remote MCP server over HTTP (streamable).',
     'rag': 'RAG mode: Search your uploaded PDF knowledge base using Pinecone vector store.',
-    'api': 'API mode: Search the web using SerpAPI (Google Search and Google Images).',
-    'mcp': 'MCP mode: Use tools from a remote MCP server over HTTP (streamable).',
-    'mcp-stdio': 'MCP-stdio mode: Use tools from a local MCP server over stdio transport.',
 };
 
-// Elements
 let chatArea, messageInput, sendBtn, loadingIndicator, modeDescription, uploadStatus, uploadBtn, fileInput;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadBtn = document.getElementById('uploadBtn');
     fileInput = document.getElementById('fileInput');
 
-    // Auto-resize textarea
     messageInput.addEventListener('input', () => {
         messageInput.style.height = 'auto';
         messageInput.style.height = Math.min(messageInput.scrollHeight, 150) + 'px';
@@ -33,13 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setMode(newMode) {
     mode = newMode;
-
-    // Update active button
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.mode === newMode);
     });
-
-    // Update description
     modeDescription.textContent = MODE_DESCRIPTIONS[newMode] || '';
 }
 
@@ -54,12 +45,10 @@ async function sendMessage() {
     const text = messageInput.value.trim();
     if (!text || loading) return;
 
-    // Add user message
     addMessage('user', text);
     messageInput.value = '';
     messageInput.style.height = 'auto';
 
-    // Show loading
     loading = true;
     sendBtn.disabled = true;
     loadingIndicator.style.display = 'block';
@@ -69,11 +58,7 @@ async function sendMessage() {
         const resp = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: text,
-                sessionId: sessionId,
-                mode: mode,
-            }),
+            body: JSON.stringify({ message: text, sessionId: sessionId, mode: mode }),
         });
 
         const data = await resp.json();
@@ -94,7 +79,6 @@ async function sendMessage() {
 }
 
 function addMessage(role, text, msgMode) {
-    // Remove welcome message if present
     const welcome = chatArea.querySelector('.welcome-message');
     if (welcome) welcome.remove();
 
@@ -124,13 +108,9 @@ function addMessage(role, text, msgMode) {
 
 function renderMarkdown(text) {
     if (typeof marked !== 'undefined') {
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-        });
+        marked.setOptions({ breaks: true, gfm: true });
         return marked.parse(text);
     }
-    // Fallback: simple escape + line breaks
     return text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -169,11 +149,7 @@ async function uploadFile() {
         const formData = new FormData();
         formData.append('file', file);
 
-        const resp = await fetch('/api/ingest', {
-            method: 'POST',
-            body: formData,
-        });
-
+        const resp = await fetch('/api/ingest', { method: 'POST', body: formData });
         const data = await resp.json();
 
         if (!resp.ok) {
