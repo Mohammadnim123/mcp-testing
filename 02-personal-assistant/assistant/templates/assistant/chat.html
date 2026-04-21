@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Assistant</title>
+    <link rel="stylesheet" href="{% static 'assistant/css/chat.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Personal Assistant</h1>
+            <p class="subtitle">AI-powered assistant with multiple tool modes</p>
+        </header>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="rag" onclick="setMode('rag')">
+                <span class="mode-dot rag"></span> RAG
+            </button>
+            <button class="mode-btn" data-mode="api" onclick="setMode('api')">
+                <span class="mode-dot api"></span> API
+            </button>
+            <button class="mode-btn" data-mode="mcp" onclick="setMode('mcp')">
+                <span class="mode-dot mcp"></span> MCP
+            </button>
+            <button class="mode-btn" data-mode="mcp-stdio" onclick="setMode('mcp-stdio')">
+                <span class="mode-dot mcp-stdio"></span> MCP-stdio
+            </button>
+        </div>
+        <p class="mode-description" id="modeDescription">RAG mode: Search your uploaded PDF knowledge base using Pinecone vector store.</p>
+
+        <div class="upload-panel">
+            <div class="upload-row">
+                <input type="file" id="fileInput" accept=".pdf" />
+                <button class="upload-btn" id="uploadBtn" onclick="uploadFile()">Upload PDF</button>
+            </div>
+            <p class="upload-status" id="uploadStatus"></p>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="welcome-message">
+                <p>Welcome! Choose a mode and start chatting. Upload PDFs for RAG mode.</p>
+            </div>
+        </div>
+
+        <div class="loading-indicator" id="loadingIndicator" style="display:none;">
+            <span class="dot-animation">Thinking</span>
+        </div>
+
+        <div class="input-area">
+            <textarea
+                id="messageInput"
+                placeholder="Type your message... (Enter to send, Shift+Enter for newline)"
+                rows="1"
+                onkeydown="handleKeyDown(event)"
+            ></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13"></path>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script src="{% static 'assistant/js/chat.js' %}"></script>
+</body>
+</html>
