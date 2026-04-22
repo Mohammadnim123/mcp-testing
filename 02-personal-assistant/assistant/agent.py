@@ -1,3 +1,4 @@
+import os
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
@@ -15,9 +16,13 @@ MCP_URL = "http://localhost:3002/mcp"
 async def run_agent(message: str, session_id: str = "default", mode: str = "mcp") -> dict:
     """Run the LangChain agent in either MCP or RAG mode."""
 
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(
+        model=os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
+        temperature=0,
+        api_key=os.environ["OPENROUTER_API_KEY"],
+        base_url=os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+    )
     thread_id = f"{session_id}-{mode}"
-    client = None
 
     if mode == "rag":
         from .tools import search_knowledge_base
@@ -30,33 +35,25 @@ async def run_agent(message: str, session_id: str = "default", mode: str = "mcp"
                 "transport": "streamable_http",
             }
         })
-        await client.__aenter__()
-        tools = client.get_tools()
+        tools = await client.get_tools()
 
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
-    try:
-        agent = create_react_agent(
-            llm,
-            tools,
-            checkpointer=checkpointer,
-            prompt=SYSTEM_MESSAGE,
-        )
+    agent = create_react_agent(
+        llm,
+        tools,
+        checkpointer=checkpointer,
+        prompt=SYSTEM_MESSAGE,
+    )
 
-        result = await agent.ainvoke(
-            {"messages": [{"role": "user", "content": message}]},
-            config={"configurable": {"thread_id": thread_id}},
-        )
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": message}]},
+        config={"configurable": {"thread_id": thread_id}},
+    )
 
-        output = result["messages"][-1].content
-        if not output or not output.strip():
-            output = "I'm sorry, I couldn't generate a response. Please try again."
+    output = result["messages"][-1].content
+    if not output or not output.strip():
+        output = "I'm sorry, I couldn't generate a response. Please try again."
 
-        return {"answer": output, "mode": mode}
-    finally:
-        if client is not None:
-            try:
-                await client.__aexit__(None, None, None)
-            except Exception:
-                pass
+    return {"answer": output, "mode": mode}

@@ -1,18 +1,20 @@
 import os
 
 from langchain_core.tools import tool
-from langchain_pinecone import PineconeVectorStore, PineconeEmbeddings
+from langchain_chroma import Chroma
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
 _vector_store = None
+COLLECTION = "assistant_kb"
 
 
 def get_vector_store():
     global _vector_store
     if _vector_store is None:
-        embeddings = PineconeEmbeddings(model="llama-text-embed-v2")
-        _vector_store = PineconeVectorStore.from_existing_index(
-            index_name=os.environ["PINECONE_INDEX"],
-            embedding=embeddings,
+        _vector_store = Chroma(
+            collection_name=COLLECTION,
+            embedding_function=FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5"),
+            persist_directory=os.environ.get("CHROMA_PATH", "./chroma_db"),
         )
     return _vector_store
 

@@ -1,12 +1,11 @@
-import os
-
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_pinecone import PineconeVectorStore, PineconeEmbeddings
+
+from .tools import get_vector_store
 
 
 async def ingest_data(file_path: str):
-    """Ingest a PDF file into Pinecone vector store."""
+    """Ingest a PDF file into the local Chroma vector store."""
     loader = PyPDFLoader(file_path)
     documents = loader.load()
 
@@ -16,15 +15,7 @@ async def ingest_data(file_path: str):
     )
     chunks = splitter.split_documents(documents)
 
-    embeddings = PineconeEmbeddings(model="llama-text-embed-v2")
-    store = PineconeVectorStore.from_existing_index(
-        index_name=os.environ["PINECONE_INDEX"],
-        embedding=embeddings,
-    )
-
-    batch_size = 96
-    for i in range(0, len(chunks), batch_size):
-        batch = chunks[i:i + batch_size]
-        await store.aadd_documents(batch)
+    store = get_vector_store()
+    await store.aadd_documents(chunks)
 
     print(f"Ingested {len(chunks)} chunks from {file_path}")
